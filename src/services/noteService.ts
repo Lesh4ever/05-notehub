@@ -3,7 +3,6 @@ import type { Note } from "../types/note";
 
 const BASE_URL = "https://notehub-public.goit.study/api/notes";
 const TOKEN = import.meta.env.VITE_NOTEHUB_TOKEN;
-console.log("TOKEN:", TOKEN);
 
 const config = {
   headers: {
@@ -17,32 +16,37 @@ interface FetchNotesParams {
   perPage?: number;
 }
 
-interface FetchNotesResponse {
-  results: Note[];
+export type FetchNotesResponse = {
+  notes: Note[];
   totalPages: number;
-}
+};
 
 export const fetchNotes = async ({
   search,
   page,
   perPage = 12,
 }: FetchNotesParams): Promise<FetchNotesResponse> => {
-  const response = await axios.get(BASE_URL, {
-    params: {
-      search,
-      page,
-      perPage,
-    },
+  const params: Record<string, string | number> = {
+    page,
+    perPage,
+  };
+
+  if (search.trim() !== "") {
+    params.search = search;
+  }
+
+  const response = await axios.get<FetchNotesResponse>(BASE_URL, {
+    params,
     ...config,
   });
 
   return {
-    results: response.data.results,
+    notes: response.data.notes,
     totalPages: response.data.totalPages,
   };
 };
 
-export const deleteNote = async (id: string): Promise<Note> => {
+export const deleteNote = async (id: number): Promise<Note> => {
   const response = await axios.delete(`${BASE_URL}/${id}`, config);
   return response.data;
 };

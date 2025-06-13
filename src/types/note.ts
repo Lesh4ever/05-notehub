@@ -1,10 +1,5 @@
-export interface FetchNotesResponse {
-  results: Note[];
-  totalPages: number;
-}
-
 export interface Note {
-  id: string;
+  id: number;
   title: string;
   content: string;
   tag: string;

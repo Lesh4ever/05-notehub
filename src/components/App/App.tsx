@@ -1,5 +1,5 @@
-import type { FetchNotesResponse } from "../../types/note";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import SearchBox from "../SearchBox/SearchBox";
@@ -14,20 +14,27 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [debouncedSearch] = useDebounce(search, 300);
   const queryClient = useQueryClient();
 
-  const { data, isPending, isError } = useQuery<FetchNotesResponse, Error>({
-    queryKey: ["notes", search, page],
-    queryFn: () => fetchNotes({ search, page }),
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["notes", debouncedSearch, page],
+    queryFn: () => fetchNotes({ search: debouncedSearch, page }),
     placeholderData: (prev) => prev,
   });
 
   const { mutate: removeNote } = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes", search, page] });
+      queryClient.invalidateQueries({
+        queryKey: ["notes", debouncedSearch, page],
+      });
     },
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   return (
     <div className={css.app}>
@@ -46,11 +53,10 @@ export default function App() {
         </button>
       </header>
 
-      {isPending && <p>Loading notes...</p>}
+      {isPending && <p>Loading...</p>}
       {isError && <p>Something went wrong. Please try again.</p>}
-
-      {data && data.results.length > 0 && (
-        <NoteList notes={data.results} onDelete={removeNote} />
+      {data && data.notes.length > 0 && (
+        <NoteList notes={data.notes} onDelete={removeNote} />
       )}
 
       {isModalOpen && <NoteModal onClose={() => setIsModalOpen(false)} />}
